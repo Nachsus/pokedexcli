@@ -3,7 +3,6 @@ package pokeapi
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 )
@@ -45,7 +44,6 @@ func MapsBackward(c *config) ([]string, error) {
 }
 
 func GetMaps(url string, c *config) ([]string, error) {
-	fmt.Printf("Requesting URL: %s\n", url)
 	if data, ok := cache.Get(url); ok {
 		var response LocationAreaResponse
 		if err := json.Unmarshal(data, &response); err == nil {
@@ -56,7 +54,6 @@ func GetMaps(url string, c *config) ([]string, error) {
 			for _, area := range response.Results {
 				areaNames = append(areaNames, area.Name)
 			}
-			fmt.Println("got from cache")
 			return areaNames, nil
 		}
 	}
@@ -77,7 +74,6 @@ func GetMaps(url string, c *config) ([]string, error) {
 	}
 
 	cache.Add(url, body)
-	fmt.Println("Added to cache")
 
 	var response LocationAreaResponse
 	if err := json.Unmarshal(body, &response); err != nil {

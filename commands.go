@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -10,7 +11,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(args []string) error
 }
 
 var supportedCommands map[string]cliCommand
@@ -37,16 +38,21 @@ func init() {
 			description: "Lists 20 maps decrementing",
 			callback:    commandMapB,
 		},
+		"explore": {
+			name:        "explore",
+			description: "Lists pokemon in given location",
+			callback:    commandExplore,
+		},
 	}
 }
 
-func commandExit() error {
+func commandExit(args []string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp() error {
+func commandHelp(args []string) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println()
@@ -56,7 +62,7 @@ func commandHelp() error {
 	return nil
 }
 
-func commandMap() error {
+func commandMap(args []string) error {
 	areaNames, err := pokeapi.MapsForward(&pokeapi.Conf)
 	if err != nil {
 		return err
@@ -69,7 +75,7 @@ func commandMap() error {
 	return nil
 }
 
-func commandMapB() error {
+func commandMapB(args []string) error {
 	areaNames, err := pokeapi.MapsBackward(&pokeapi.Conf)
 	if err != nil {
 		return err
@@ -77,6 +83,27 @@ func commandMapB() error {
 
 	for _, name := range areaNames {
 		fmt.Println(name)
+	}
+
+	return nil
+}
+
+func commandExplore(args []string) error {
+	if len(args) == 0 {
+		return errors.New("please provide a location area name")
+	}
+
+	areaName := args[0]
+	fmt.Printf("Exploring %s...\n", areaName)
+
+	pokemonNames, err := pokeapi.GetPokemonFromArea(areaName, &pokeapi.Conf)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Found Pokemon:")
+	for _, name := range pokemonNames {
+		fmt.Println(" - " + name)
 	}
 
 	return nil

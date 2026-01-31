@@ -27,14 +27,20 @@ func main() {
 			continue
 		}
 
-		first := strings.Fields(text)[0]
-		cmd, ok := supportedCommands[first]
+		fields := strings.Fields(text)
+		commandName := fields[0]
+		args := []string{}
+		if len(fields) > 1 {
+			args = fields[1:]
+		}
+
+		cmd, ok := supportedCommands[commandName]
 		if !ok {
 			fmt.Println("Unknown command")
 			continue
 		}
 
-		err := cmd.callback()
+		err := cmd.callback(args)
 		if err != nil {
 			fmt.Printf("Error in function: %s", err)
 			continue
