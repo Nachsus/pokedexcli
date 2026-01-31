@@ -10,15 +10,33 @@ import (
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
+		fmt.Println("")
 		fmt.Print("Pokedex > ")
+
 		ok := scanner.Scan()
 		if !ok {
 			fmt.Println("Error in scan")
-			break
+			continue
 		}
+
 		text := scanner.Text()
 		text = strings.ToLower(text)
+		if text == "" {
+			fmt.Println("Please enter a command")
+			continue
+		}
+
 		first := strings.Fields(text)[0]
-		fmt.Println("Your command was: " + first)
+		cmd, ok := supportedCommands[first]
+		if !ok {
+			fmt.Println("Unknown command")
+			continue
+		}
+
+		err := cmd.callback()
+		if err != nil {
+			fmt.Printf("Error in function: %s", err)
+			continue
+		}
 	}
 }
