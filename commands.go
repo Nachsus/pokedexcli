@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 
 	"github.com/Nachsus/pokedexcli/internal/pokeapi"
@@ -42,6 +43,11 @@ func init() {
 			name:        "explore",
 			description: "Lists pokemon in given location",
 			callback:    commandExplore,
+		},
+		"catch": {
+			name:        "catch",
+			description: "Attampts to catch a Pokemon based on its base experience",
+			callback:    commandCatch,
 		},
 	}
 }
@@ -104,6 +110,41 @@ func commandExplore(args []string) error {
 	fmt.Println("Found Pokemon:")
 	for _, name := range pokemonNames {
 		fmt.Println(" - " + name)
+	}
+
+	return nil
+}
+
+func commandCatch(args []string) error {
+	if len(args) == 0 {
+		return errors.New("please provide a pokemon name")
+	}
+
+	pokemonName := args[0]
+	fmt.Printf("Throwing a Pokeball at %s...\n", pokemonName)
+
+	pokemon, err := pokeapi.GetPokemon(pokemonName, &pokeapi.Conf)
+	if err != nil {
+		return err
+	}
+
+	const minChance = 30.0
+	const maxChance = 80.0
+	const maxBaseXP = 608.0
+
+	catchChance := maxChance - ((float64(pokemon.BaseExperience) / maxBaseXP) * (maxChance - minChance))
+	if catchChance < minChance {
+		catchChance = minChance
+	}
+	if catchChance > maxChance {
+		catchChance = maxChance
+	}
+
+	roll := rand.Float64() * 100.0
+	if roll <= catchChance {
+		fmt.Printf("%s was caught!", pokemonName)
+	} else {
+		fmt.Printf("%s escaped!", pokemonName)
 	}
 
 	return nil
