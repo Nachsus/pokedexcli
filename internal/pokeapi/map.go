@@ -3,6 +3,8 @@ package pokeapi
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -43,6 +45,22 @@ func MapsBackward(c *config) ([]string, error) {
 }
 
 func GetMaps(url string, c *config) ([]string, error) {
+	fmt.Printf("Requesting URL: %s\n", url)
+	if data, ok := cache.Get(url); ok {
+		var response LocationAreaResponse
+		if err := json.Unmarshal(data, &response); err == nil {
+			c.mapNextUrl = response.Next
+			c.mapPrevUrl = response.Previous
+
+			var areaNames []string
+			for _, area := range response.Results {
+				areaNames = append(areaNames, area.Name)
+			}
+			fmt.Println("got from cache")
+			return areaNames, nil
+		}
+	}
+
 	res, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -53,8 +71,16 @@ func GetMaps(url string, c *config) ([]string, error) {
 		return nil, errors.New("failed to fetch data from PokeAPI")
 	}
 
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	cache.Add(url, body)
+	fmt.Println("Added to cache")
+
 	var response LocationAreaResponse
-	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, err
 	}
 

@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Println("")
