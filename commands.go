@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/Nachsus/pokedexcli/internal/pokeapi"
+	"github.com/Nachsus/pokedexcli/internal/pokedex"
 )
 
 type cliCommand struct {
@@ -16,6 +17,7 @@ type cliCommand struct {
 }
 
 var supportedCommands map[string]cliCommand
+var userPokedex = pokedex.NewPokedex()
 
 func init() {
 	supportedCommands = map[string]cliCommand{
@@ -46,8 +48,18 @@ func init() {
 		},
 		"catch": {
 			name:        "catch",
-			description: "Attampts to catch a Pokemon based on its base experience",
+			description: "Attempts to catch a Pokemon based on its base experience",
 			callback:    commandCatch,
+		},
+		"inspect": {
+			name:        "inspect",
+			description: "Inspects the data for a Pokemon you have in your Pokedex",
+			callback:    commandInspect,
+		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Lists names of all caught Pokemon",
+			callback:    commandPokedex,
 		},
 	}
 }
@@ -121,6 +133,12 @@ func commandCatch(args []string) error {
 	}
 
 	pokemonName := args[0]
+
+	if userPokedex.Has(pokemonName) {
+		fmt.Printf("You already caught %s!\n", pokemonName)
+		return nil
+	}
+
 	fmt.Printf("Throwing a Pokeball at %s...\n", pokemonName)
 
 	pokemon, err := pokeapi.GetPokemon(pokemonName, &pokeapi.Conf)
@@ -142,9 +160,60 @@ func commandCatch(args []string) error {
 
 	roll := rand.Float64() * 100.0
 	if roll <= catchChance {
-		fmt.Printf("%s was caught!", pokemonName)
+		userPokedex.Add(*pokemon)
+		fmt.Printf("%s was caught!\n", pokemonName)
+		fmt.Println("You may now inspect it with the inspect command.")
 	} else {
-		fmt.Printf("%s escaped!", pokemonName)
+		fmt.Printf("%s escaped!\n", pokemonName)
+	}
+
+	return nil
+}
+
+func commandInspect(args []string) error {
+	if len(args) == 0 {
+		return errors.New("please provide a pokemon name")
+	}
+
+	pokemonName := args[0]
+
+	if !userPokedex.Has(pokemonName) {
+		return errors.New("You have not caught " + pokemonName)
+	}
+
+	pokemon, ok := userPokedex.Get(pokemonName)
+	if !ok {
+		return errors.New("error getting pokemon from pokedex")
+	}
+
+	fmt.Printf("Name: %s\n", pokemon.Name)
+	fmt.Printf("Height: %d\n", pokemon.Height)
+	fmt.Printf("Weight: %d\n", pokemon.Weight)
+	fmt.Println("Stats:")
+	fmt.Printf("  -hp: %d\n", pokemon.Stats["hp"])
+	fmt.Printf("  -attack: %d\n", pokemon.Stats["attack"])
+	fmt.Printf("  -defense: %d\n", pokemon.Stats["defense"])
+	fmt.Printf("  -special-attack: %d\n", pokemon.Stats["special-attack"])
+	fmt.Printf("  -special-defense: %d\n", pokemon.Stats["special-defense"])
+	fmt.Printf("  -speed: %d\n", pokemon.Stats["speed"])
+	fmt.Println("Types:")
+	for _, typeName := range pokemon.Types {
+		fmt.Printf("  - %s\n", typeName)
+	}
+
+	return nil
+}
+
+func commandPokedex(args []string) error {
+	pokemon := userPokedex.GetAll()
+	if len(pokemon) < 1 {
+		fmt.Println("No pokemon in your pokedex")
+		return nil
+	}
+
+	fmt.Println("Your Pokedex:")
+	for _, poke := range pokemon {
+		fmt.Println(" - " + poke.Name)
 	}
 
 	return nil

@@ -9,21 +9,45 @@ import (
 )
 
 type PokemonDetails struct {
-	Name           string `json:"name"`
-	BaseExperience int    `json:"base_experience"`
-	Height         int    `json:"height"`
-	Weight         int    `json:"weight"`
+	Name           string         `json:"name"`
+	BaseExperience int            `json:"base_experience"`
+	Height         int            `json:"height"`
+	Weight         int            `json:"weight"`
+	Stats          map[string]int `json:"-"`
+	Types          []string       `json:"-"`
+}
+
+type pokemonAPIResponse struct {
+	Name           string           `json:"name"`
+	BaseExperience int              `json:"base_experience"`
+	Height         int              `json:"height"`
+	Weight         int              `json:"weight"`
+	Stats          []pokemonStatAPI `json:"stats"`
+	Types          []pokemonTypeAPI `json:"types"`
+}
+
+type pokemonStatAPI struct {
+	BaseStat int `json:"base_stat"`
+	Stat     struct {
+		Name string `json:"name"`
+	} `json:"stat"`
+}
+
+type pokemonTypeAPI struct {
+	Type struct {
+		Name string `json:"name"`
+	} `json:"type"`
 }
 
 func GetPokemon(pokemonName string, c *config) (*PokemonDetails, error) {
 	url := c.pokemonBaseUrl + pokemonName
 
 	if data, ok := cache.Get(url); ok {
-		var pokemon PokemonDetails
-		if err := json.Unmarshal(data, &pokemon); err != nil {
+		var apiResponse pokemonAPIResponse
+		if err := json.Unmarshal(data, &apiResponse); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal cached data: %w", err)
 		}
-		return &pokemon, nil
+		return convertToPokemonDetails(apiResponse), nil
 	}
 
 	res, err := http.Get(url)
@@ -46,10 +70,33 @@ func GetPokemon(pokemonName string, c *config) (*PokemonDetails, error) {
 
 	cache.Add(url, body)
 
-	var pokemon PokemonDetails
-	if err := json.Unmarshal(body, &pokemon); err != nil {
+	var apiResponse pokemonAPIResponse
+	if err := json.Unmarshal(body, &apiResponse); err != nil {
 		return nil, err
 	}
 
-	return &pokemon, nil
+	return convertToPokemonDetails(apiResponse), nil
+}
+
+func convertToPokemonDetails(apiResponse pokemonAPIResponse) *PokemonDetails {
+	// Convert stats to map
+	stats := make(map[string]int)
+	for _, stat := range apiResponse.Stats {
+		stats[stat.Stat.Name] = stat.BaseStat
+	}
+
+	// Convert types to string slice
+	types := make([]string, len(apiResponse.Types))
+	for i, t := range apiResponse.Types {
+		types[i] = t.Type.Name
+	}
+
+	return &PokemonDetails{
+		Name:           apiResponse.Name,
+		BaseExperience: apiResponse.BaseExperience,
+		Height:         apiResponse.Height,
+		Weight:         apiResponse.Weight,
+		Stats:          stats,
+		Types:          types,
+	}
 }
