@@ -32,6 +32,11 @@ func init() {
 			description: "Lists 20 maps incrementing",
 			callback:    commandMap,
 		},
+		"mapb": {
+			name:        "mapb",
+			description: "Lists 20 maps decrementing",
+			callback:    commandMapB,
+		},
 	}
 }
 
@@ -52,7 +57,20 @@ func commandHelp() error {
 }
 
 func commandMap() error {
-	areaNames, err := pokeapi.GetMaps(&pokeapi.Conf)
+	areaNames, err := pokeapi.MapsForward(&pokeapi.Conf)
+	if err != nil {
+		return err
+	}
+
+	for _, name := range areaNames {
+		fmt.Println(name)
+	}
+
+	return nil
+}
+
+func commandMapB() error {
+	areaNames, err := pokeapi.MapsBackward(&pokeapi.Conf)
 	if err != nil {
 		return err
 	}

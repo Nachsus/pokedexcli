@@ -18,14 +18,31 @@ type LocationArea struct {
 	URL  string `json:"url"`
 }
 
-func GetMaps(c *config) ([]string, error) {
+func MapsForward(c *config) ([]string, error) {
 	var url string
-	if c.mapNextUrl == "" {
+	switch c.mapNextUrl {
+	case "":
 		url = c.mapBaseUrl
-	} else {
+	default:
 		url = c.mapNextUrl
 	}
 
+	return GetMaps(url, c)
+}
+
+func MapsBackward(c *config) ([]string, error) {
+	var url string
+	switch c.mapPrevUrl {
+	case "":
+		url = c.mapBaseUrl
+	default:
+		url = c.mapPrevUrl
+	}
+
+	return GetMaps(url, c)
+}
+
+func GetMaps(url string, c *config) ([]string, error) {
 	res, err := http.Get(url)
 	if err != nil {
 		return nil, err
