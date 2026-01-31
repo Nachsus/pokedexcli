@@ -32,6 +32,9 @@ func GetPokemon(pokemonName string, c *config) (*PokemonDetails, error) {
 	}
 	defer res.Body.Close()
 
+	if res.StatusCode == 404 {
+		return nil, errors.New("pokemon not found")
+	}
 	if res.StatusCode != http.StatusOK {
 		return nil, errors.New("failed to fetch data from PokeAPI")
 	}
